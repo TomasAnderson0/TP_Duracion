@@ -151,8 +151,9 @@ data$hormon = as.factor(data$hormon)
 
 ggplot(data = data) +
   geom_mosaic(aes(x = product(size, hormon), fill=size)) +
-  scale_x_productlist("Tratamiento hormonal", labels = c("Sin", "Con"))+
-  scale_y_productlist("Tamaño del tumor", labels = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"))
-  labs(title="Tamaño por hormona") +
-  theme(panel.background = element_blank(), axis.text.y = element_text(angle = 90))
+  geom_mosaic_text(aes(x = product(size, hormon), label = after_stat(.wt))) +
+  scale_x_productlist("Tratamiento hormonal", labels = c("Sin", "Con"), position = "top") +
+  scale_y_productlist("Tamaño del tumor", labels = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm")) +
+  theme(panel.background = element_blank(), legend.position = "none")
+
 
