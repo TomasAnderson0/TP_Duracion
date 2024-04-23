@@ -10,12 +10,10 @@ data <- rotterdam %>%
   filter(year > 1991) %>% select(-c(nodes, rtime, recur))
 
 
-
-
-
 # Cantidad de mujeres para cada tamaño
 
 data %>% group_by(size) %>% summarise(nombre = sum(death < 2))
+
 
 # Cantidad de mujeres para cada tratamiento
 
@@ -33,8 +31,45 @@ data %>% group_by(hormon) %>% summarise(suma = 100*365*sum(death)/sum(dtime))
 
 # Media truncada
 
+
+
 media_estimada(data$dtime, data$death, data$size)
 
+a1 <- survfit(Surv(data$dtime[data$size == "<=20"], data$death[data$size == "<=20"]) ~ 1)
+media1 <- 1 * (a1$time[1] - 0)
+for (i in 2:length(a1$time)) {
+  media <- media + a1$surv[i-1] * (a1$time[i] - a1$time[i-1])
+}
+
+a2 <- survfit(Surv(data$dtime[data$size == "20-50"], data$death[data$size == "20-50"]) ~ 1)
+media2 <- 1 * (a2$time[1] - 0)
+for (i in 2:length(a2$time)) {
+  media <- media + a2$surv[i-1] * (a2$time[i] - a2$time[i-1])
+}
+
+a3 <- survfit(Surv(data$dtime[data$size == ">50"], data$death[data$size == ">50"]) ~ 1)
+media3 <- 1 * (a3$time[1] - 0)
+for (i in 2:length(a3$time)) {
+  media <- media + a3$surv[i-1] * (a3$time[i] - a3$time[i-1])
+}
+
+# Curva de supervivencia 
+
+fh = survfit(Surv(dtime/365, death) ~ 1, 
+                  type="fleming-harrington", 
+                  data=data)
+
+ggsurvplot(fit = fh, data = data,
+           conf.int = F,
+           censor.shape = 20, 
+           xlab = "Años", 
+           ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
+           legend.title="",
+           palette = c("purple"),
+           legend.labs = "Todas las personas",
+           title = "Supervivencia estimada según tamaño del tumor"
+)
 
 
 # Curva de supervivencia segun tamaño
@@ -49,12 +84,14 @@ fh_size = survfit(Surv(dtime, death) ~ size_num,
 ggsurvplot(fit = fh_size, data = data,
            conf.int = F, pval = T,
            censor.shape = 20, 
-           xlab = "Días", 
-           test.for.trend = T,
+           xlab = "Años", 
            ylab = "Prob. de supervivencia estimada",
-           legend.title="Tamaño del tumor",
+           break.x.by = 1,
+           test.for.trend = T,
+           legend.title="",
            palette = c("purple", "lightgreen", "skyblue"),
-           legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm")
+           legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"),
+           title = "Supervivencia estimada según tamaño del tumor"
            )
 
 
@@ -68,14 +105,14 @@ ggsurvplot(fit = fh_horm, data = data,
            conf.int = F, 
            pval = T,
            censor.shape = 20, 
-           xlab = "Días", 
+           xlab = "Años", 
            ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
            legend.title="",
            palette = c("purple", "lightgreen"),
-           legend.labs = c("Sin tratamiento hormonal", "Con tratamiento hormonal") 
+           legend.labs = c("Sin tratamiento hormonal", "Con tratamiento hormonal"),
+           title = "Supervivencia estimada según si recibio tratamiento hormonal" 
 ) 
-
-
 
 
 
@@ -90,8 +127,9 @@ fh_1 = survfit(Surv(dtime, death) ~ size,
 ggsurvplot(fit = fh_1, data = data_hormon_si,
            conf.int = F,
            censor.shape = 20, 
-           xlab = "Dìas", 
+           xlab = "Años", 
            ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
            legend.title="Tamaño del tumor",
            palette = c("purple", "lightgreen", "skyblue"),
            legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm")
@@ -109,8 +147,9 @@ fh_2 = survfit(Surv(dtime, death) ~ size,
 ggsurvplot(fit = fh_2, data = data_hormon_no,
            conf.int = F, 
            censor.shape = 20, 
-           xlab = "Dìas", 
+           xlab = "Años", 
            ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
            legend.title="Tamaño del tumor",
            palette = c("purple", "lightgreen", "skyblue"),
            legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm")) 
@@ -126,34 +165,35 @@ ggsurvplot(fit = fh_2, data = data_hormon_no,
 media_trunc <- data %>% 
   group_by(size) %>% 
   summarise(media_truncada = sum(dtime)/365) %>% ungroup()
+
 hazard_prom <- data %>% 
   group_by(size) %>% 
   summarise(hazard = 100*365*sum(death)/sum(dtime)) %>% 
   ungroup()
 cant <- data %>% 
   group_by(size) %>% summarise(cantidad = sum(size == size))
-datos_treemap <- cant %>% mutate(hazard_prom[,2]) %>% mutate(media_trunc[,2])
 
 
 
-ggplot(data = datos_treemap) +
-  aes(area = cantidad, fill = hazard, label = paste0(size, "\n Hazard promedio " , round(hazard, 2),"\n", round(media_truncada, 2))) +
-  geom_treemap() + 
-  geom_treemap_text() +
-  scale_fill_gradient(low ="green3", high = "red")
-library(treemapify)
+data$hormon_factor = as.factor(data$hormon)
 
 
-#
 
 
-data$hormon = as.factor(data$hormon)
+
 
 ggplot(data = data) +
-  geom_mosaic(aes(x = product(size, hormon), fill=size)) +
-  geom_mosaic_text(aes(x = product(size, hormon), label = after_stat(.wt))) +
-  scale_x_productlist("Tratamiento hormonal", labels = c("Sin", "Con"), position = "top") +
-  scale_y_productlist("Tamaño del tumor", labels = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm")) +
-  theme(panel.background = element_blank(), legend.position = "none")
+  geom_mosaic(aes(x = product(size, hormon_factor), fill=size)) +
+  geom_mosaic_text(aes(x = product(size, hormon_factor), label = after_stat(.wt))) +
+  scale_x_productlist_yo(name = "Tratamiento hormonal", labels = c("Sin", "Con"), position = "top", 
+                         sec.axis = dup_axis(labels = c("316","128"), name = "")) +
+  scale_y_productlist_yo(name =  "Tamaño del tumor", labels = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"), 
+                         sec.axis = sec_axis(transform = ~.*1, breaks = c(0.25,0.6,.95), labels = c("64","152","228"), name = "")) +
+  theme(panel.background = element_blank(), legend.position = "none", 
+          axis.ticks = element_blank(), axis.text.y.right = element_text(vjust = 2,size = 11),axis.text.x.bottom = element_text(size = 11)) + 
+  ggtitle("Mosaicos del tamaño del tumor vs tratamiento hormonal") 
 
 
+
+
+#Faltan razon de hazards

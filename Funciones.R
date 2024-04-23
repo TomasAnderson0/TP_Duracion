@@ -46,3 +46,109 @@ media_estimada <- function(tiempo, estado, variable = NULL){
     output
   }
 }
+
+
+
+is.formula <- function (x) inherits(x, "formula")
+
+is.discrete <- function(x) {
+  is.factor(x) || is.character(x) || is.logical(x)
+}
+
+product_names <- function() {
+  function(x) {
+    #cat(" in product_breaks\n")
+    #browser()
+    unique(x)
+  }
+}
+
+product_breaks <- function() {
+  function(x) {
+    #cat(" in product_breaks\n")
+    #browser()
+    unique(x)
+  }
+}
+
+product_labels <- function() {
+  function(x) {
+    #cat(" in product_labels\n")
+    #browser()
+    
+    unique(x)
+  }
+}
+
+is.waive <- getFromNamespace("is.waive", "ggplot2")
+
+
+
+
+## copied from ggplot2
+with_seed_null <- function(seed, code) {
+  if (is.null(seed)) {
+    code
+  } else {
+    withr::with_seed(seed, code)
+  }
+}
+
+set_sec_axis <- function(sec.axis, scale) {
+  if (!is.waive(sec.axis)) {
+    if (is.formula(sec.axis)) sec.axis <- sec_axis(sec.axis)
+    if (!is.sec_axis(sec.axis)) abort("Secondary axes must be specified using 'sec_axis()'")
+    scale$secondary.axis <- sec.axis
+  }
+  return(scale)
+}
+
+
+
+
+
+scale_y_productlist_yo = function (name = ggplot2::waiver(), breaks = product_breaks(), 
+                                   minor_breaks = NULL, labels = product_labels(), limits = NULL, 
+                                   expand = ggplot2::waiver(), oob = scales:::censor, na.value = NA_real_, 
+                                   trans = "identity", position = "left", sec.axis = ggplot2::waiver()) 
+{
+  sc <- ggplot2::continuous_scale(c("y", "ymin", "ymax", "yend", 
+                                    "yintercept", "ymin_final", "ymax_final", "ylower", "ymiddle", 
+                                    "yupper"), "position_c", identity, name = name, breaks = breaks, 
+                                  minor_breaks = minor_breaks, labels = labels, limits = limits, 
+                                  expand = expand, oob = oob, na.value = na.value, trans = trans, 
+                                  guide = ggplot2::waiver(), position = position, super = ScaleContinuousProduct)
+
+    sc$secondary.axis <- sec.axis
+
+  sc
+}
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+scale_x_productlist_yo = function (name = ggplot2::waiver(), breaks = product_breaks(), 
+          minor_breaks = NULL, labels = product_labels(), limits = NULL, 
+          expand = ggplot2::waiver(), oob = scales:::censor, na.value = NA_real_, 
+          transform = "identity", position = "bottom", sec.axis = ggplot2::waiver()) 
+{
+  sc <- ggplot2::continuous_scale(c("x", "xmin", "xmax", "xend", 
+                                    "xintercept", "xmin_final", "xmax_final", "xlower", "xmiddle", 
+                                    "xupper"), "position_c", identity, name = name, breaks = breaks, 
+                                  minor_breaks = minor_breaks, labels = labels, limits = limits, 
+                                  expand = expand, oob = oob, na.value = na.value, transform = transform, 
+                                  guide = ggplot2::waiver(), position = position, super = ScaleContinuousProduct)
+  sc$secondary.axis <- sec.axis
+  sc
+}
+
+
+
+
+
