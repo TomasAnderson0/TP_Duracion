@@ -188,7 +188,7 @@ ggplot(data = data) +
   scale_x_productlist_yo(name = "Tratamiento hormonal", labels = c("Sin", "Con"), position = "top", 
                          sec.axis = dup_axis(labels = c("316","128"), name = "")) +
   scale_y_productlist_yo(name =  "Tamaño del tumor", labels = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"), 
-                         sec.axis = sec_axis(transform = ~.*1, breaks = c(0.25,0.6,.95), labels = c("64","152","228"), name = "")) +
+                         sec.axis = sec_axis(transform = ~.*1, breaks = c(0.25,0.6,.95), labels = c("228","152","64"), name = "")) +
   theme(panel.background = element_blank(), legend.position = "none", 
           axis.ticks = element_blank(), axis.text.y.right = element_text(vjust = 2,size = 11),axis.text.x.bottom = element_text(size = 11)) + 
   ggtitle("Mosaicos del tamaño del tumor vs tratamiento hormonal") 
