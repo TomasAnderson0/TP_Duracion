@@ -1,0 +1,121 @@
+---
+title: "Análisis de Duración sobre el cáncer de mamas"
+subtitle: "Trabajo Práctico: Primera presentación"
+format: revealjs
+editor: visual
+---
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(survival)
+library(survminer)
+data <- rotterdam %>%
+  filter(year > 1991) %>%
+  ## Eliminar las variables que no se utilizan
+  select(-c(nodes, rtime, recur))
+```
+
+
+## Introducción {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"} 
+
+De acuerdo a datos de la Organización Mundial de la Salud (OMS), cada año se producen 1,38 millones de nuevos casos y 458.000 muertes por cáncer de mama.
+
+<img src="cancer-mama.jpg" width="400" height="225"/>
+
+Por este motivo se dio el interés de hacer un análisis de supervivencia de las víctimas de esta patología.
+
+## Datos {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"} 
+
+```{r, echo=FALSE}
+censurados <- round(mean(data$death), 2)*100
+```
+Se analizan personas que tuvieron cáncer de mamas y se observa su supervivencia en días desde la **operación primaria** del tumor hasta la **muerte** del paciente. Se toman aquellos pacientes que fueron operados en 1992 y 1993 en la ciudad de Rotterdam.
+
+<img src="https://media-cdn.tripadvisor.com/media/photo-c/1280x250/03/e7/69/5e/rotterdam.jpg" width="400" height="225"/>
+
+Si bien el `r censurados`% de los datos se encuentran censurados por derecha, el análisis de supervivencia nos permite continuar con el estudio.
+
+## Medidas descriptivas generales {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"} 
+
+Supervivencia general estimada
+```{r}
+fh = survfit(Surv(dtime/365, death) ~ 1, 
+                  type="fleming-harrington", 
+                  data=data)
+
+ggsurvplot(fit = fh, data = data,
+           conf.int = F,
+           censor.shape = 20, 
+           xlab = "Días", 
+           ylab = "Prob. de supervivencia estimada",
+           legend.title="",
+           palette = c("purple"),
+           legend.labs = "Todas las personas"
+           # ,title = "Supervivencia estimada según tamaño del tumor"
+           )
+
+hazard_general <- round(100 * 365 * sum(data$death) / sum(data$dtime), 2)
+```
+
+
+Ignorando cualquier otra información, cada 100 personas que padezcan cáncer de mamas, se mueren `r hazard_general` por año y el 72% de ellas sobrevive más de 8 años.
+
+## Según el tamaño del tumor {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"} 
+
+Se vio de interés analizar la supervivencia de los paciente controlando por el tamaño del tumor. En dicho caso las funciones de supervivencia varían de la siguiente manera.
+
+```{r}
+data = data %>%  mutate(size_num = case_when(data$size == "<=20" ~ 1, data$size == "20-50" ~ 2, data$size == ">50" ~ 3)) 
+
+
+fh_size = survfit(Surv(dtime/365, death) ~ size_num, 
+                  type="fleming-harrington", 
+                  data=data)
+
+grafico <- ggsurvplot(fit = fh_size, data = data,
+           conf.int = F, pval = T,
+           censor.shape = 20, 
+           xlab = "Años", 
+           ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
+           test.for.trend = T,
+           legend.title="",
+           palette = c("purple", "lightgreen", "skyblue"),
+           legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"),
+           title = "Supervivencia estimada para las mujeres según el tamaño del tumor")
+
+grafico
+```
+## Según el tamaño del tumor {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"} 
+Existe un ordenamiento monótono donde la experiencia de supervivencia **disminuye** al tratarse de tumores más grandes, es decir, a mayor el tamaño del tumor, menor la supervivencia.
+
+```{r}
+grafico
+```
+
+## Según el tamaño del tumor {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"}
+```{r, fig.height=4, fig.width=14}
+library(ggplot2)
+library(treemapify)
+
+hazard_prom <- data %>% 
+  group_by(size) %>% 
+  summarise(hazard = 100*365*sum(death)/sum(dtime)) %>% 
+  ungroup()
+cant <- data %>% 
+    group_by(size) %>% summarise(cantidad = sum(size == size))
+datos_treemap <- cant %>% mutate(hazard_prom[,2])%>%
+  mutate(tamano = c("Menor a 20mm", "Entre 20mm y 50mm", "Mayor a 50mm")) %>% mutate(trunks = c(2621.42, 2419.36, 1740.73))
+
+ggplot(data = datos_treemap) +
+  aes(area = cantidad, fill = hazard, label = paste0(tamano, "\nRiesgo = ", round(hazard, 2), "\nMedia truncada = ", trunks)) +
+  geom_treemap() + 
+  geom_treemap_text(size = 25, family = "serif") +
+  scale_fill_gradient(low ="lightgreen", high = "red") +
+  theme(legend.position = "none")
+```
+
+Más del 50% de los tumores tienen un tamaño menor a 20mm, siendo estos los menos letales ya que en promedio se mueren 3.56 pacientes de 100 al año. En contraposición, los tumores más grandes (mayores a 50mm) superan este promedio en 2.85 veces.
+
+## Receptores de estrógeno estratificado {background-image="https://en.idei.club/uploads/posts/2023-06/1686354062_en-idei-club-p-green-medical-background-dizain-pinterest-8.jpg"}
+
