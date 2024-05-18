@@ -3,11 +3,17 @@ title: "PDF_Duracion"
 format: pdf
 editor: visual
 ---
-```{r, echo=FALSE}
-library(tidyverse)
-library(survival)
-library(survminer)
 
+```{r, echo=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+library(survival)
+library(tidyverse)
+library(survminer)
+library(ggplot2)
+library(ggmosaic)
+library(plotly)
+library(treemapify)
+library(gridExtra)
+source("Funciones.R")
 data <- rotterdam %>%
   filter(year > 1991) %>%
   ## Eliminar las variables que no se utilizan
@@ -29,8 +35,8 @@ Si bien el `r censurados`% de los datos se encuentran censurados por derecha, el
 Dentro de la base de datos se cuentan con las siguientes variables observadas de cada paciente:
 
 1.  Tiempo: Cantidad de días desde la operación hasta la muerte del paciente o pérdida de seguimiento
-2.  Muerte: Sie el paciente murió o fue una censura
-3.  Quimioterapia: Si el paciente hizo o no un trtamiento de quimioterapia
+2.  Muerte: Si el paciente murió o fue una censura
+3.  Quimioterapia: Si el paciente hizo o no un tratamiento de quimioterapia
 4.  Hormonas: Si el paciente usaba un tratamiento hormonal o no
 5.  Menopausia: Si el paciente tenía menopaucia o no
 6.  Edad: Edad del paciente al hacerse la operación primaria
@@ -45,7 +51,7 @@ El objetivo principal de este informe es analizar la influencia de las variables
 
 La supervivencia general estimada por el conjunto de datos de las mujeres con cáncer de mama es la siguiente:
 
-```{r, fig.cap = "Supervivencia estimada de las mujeres con cáncer de mama"}
+```{r, echo = FALSE, fig.cap = "Supervivencia estimada de las mujeres con cáncer de mama"}
 fh = survfit(Surv(dtime/365, death) ~ 1, 
                   type="fleming-harrington", 
                   data=data)
@@ -64,11 +70,13 @@ ggsurvplot(fit = fh, data = data,
 hazard_general <- round(100 * 365 * sum(data$death) / sum(data$dtime), 2)
 ```
 
-En general, cada 100 mujeres que padezcan cáncer de mamas, la tasa de muerte es de `r hazard_general`personas/año  y el 72% de ellas sobrevive más de 8 años.
+En general, cada 100 mujeres que padezcan cáncer de mamas, la tasa de muerte es de `r hazard_general`personas/año y el 72% de ellas sobrevive más de 8 años.
+
+## Tamaño del tumor
 
 Se vio de interés analizar la supervivencia de los paciente controlando por el tamaño del tumor. En dicho caso las funciones de supervivencia varían de la siguiente manera.
 
-```{r}
+```{r, echo = FALSE}
 data = data %>%  mutate(size_num = case_when(data$size == "<=20" ~ 1, data$size == "20-50" ~ 2, data$size == ">50" ~ 3)) 
 
 
@@ -90,3 +98,96 @@ ggsurvplot(fit = fh_size, data = data,
 ```
 
 Existe un ordenamiento monótono donde la experiencia de supervivencia **disminuye** al tratarse de tumores más grandes, es decir, a mayor el tamaño del tumor, menor la supervivencia.
+
+```{r, fig.height=4, fig.width=14, echo = FALSE}
+
+hazard_prom <- data %>% 
+  group_by(size) %>% 
+  summarise(hazard = 100*365*sum(death)/sum(dtime)) %>% 
+  ungroup()
+cant <- data %>% 
+    group_by(size) %>% summarise(cantidad = sum(size == size))
+datos_treemap <- cant %>% mutate(hazard_prom[,2])%>%
+  mutate(tamano = c("Menor a 20mm", "Entre 20mm y 50mm", "Mayor a 50mm")) %>% mutate(trunks = c(2621.42, 2419.36, 1740.73))
+
+ggplot(data = datos_treemap) +
+  aes(area = cantidad, fill = hazard, label = paste0(tamano, "\nRiesgo = ", round(hazard, 2), "    100 personas/año" ,"\nMedia truncada = ", round(trunks/365, 2), " años")) +
+  geom_treemap() + 
+  geom_treemap_text(size = 25, family = "serif") +
+  scale_fill_gradient(low ="lightgreen", high = "red") +
+  theme(legend.position = "none") 
+```
+
+Más del 50% de los tumores tienen un tamaño menor a 20mm, siendo estos los menos letales ya que en promedio se mueren 3.56 pacientes de 100 al año. En contraposición, los tumores más grandes (mayores a 50mm) superan este promedio en 2.85 veces.
+
+## Tratamiento hormonal
+ 
+Resulta de interes ver el impacto del tratamiento hormonal en la supervivencia al cancer de mama controlado por la cantidad de receptores de estrógeno. El cruce entre ambas variables esta dado en la siguiente tabla.
+
+```{r, fig.height= 5, fig.width=14, echo = FALSE, warning = FALSE, error=FALSE}
+data$hormon_factor = as.factor(data$hormon)
+
+data = data %>% mutate(er2 = case_when(er == 0 ~ "Igual a 0", er > 0 & er <=50 ~ "Entre 0 y 50", er > 50 ~ "Mayor a 50"))
+
+ggplot(data = data) +
+  geom_mosaic(aes(x = product(er2, hormon_factor), fill=er2)) +
+  geom_mosaic_text(aes(x = product(er2, hormon_factor), label = after_stat(.wt)), size=6) +
+  scale_x_productlist_yo(name = "Tratamiento hormonal", labels = c("Sin", "Con"), position = "top", 
+                         sec.axis = dup_axis(labels = c("316","128"), name = "")) +
+  scale_y_productlist_yo(name =  " Receptores de estrógeno (en fmol/l)", labels = c("Igual a 0", "Entre 0 y 50", "Mayor a 50"), 
+                         sec.axis = sec_axis(transform = ~.*1, breaks = c(0.2,.45,.8), labels = c("149","88","207"), name = "")) +
+  theme(panel.background = element_blank(), legend.position = "none", 
+          axis.ticks = element_blank(), axis.text.y.right = element_text(vjust = 2, size = 17),axis.text.x.bottom = element_text(size = 17), axis.text = element_text(size = 17), axis.title = element_text(size = 17), title = element_text(size = 17), axis.text.y.left = element_text(size = 17)) + 
+  ggtitle("Grafico de mosaicos de los receptores de estrógeno vs tratamiento hormonal") 
+
+```
+
+La supervivencia de los pacientes según si reciben el tratamiento hormonal o no controlando por la cantidad de receptores de estrógeno varían de la siguiente manera.
+
+
+```{r, echo=FALSE}
+#Curvas de supervivencia para hormonas x er
+
+data_hormon_si = data %>% filter(hormon == 1)
+
+
+fit_si = survfit(Surv(dtime/365, death) ~ er2, 
+                 type="fleming-harrington", 
+                 data=data_hormon_si)
+
+dat_si = data.frame(surv = fit_si$surv, tiempo = fit_si$time, trat = as.factor(c(rep("Igual a 0",fit_si$strata[1]), rep("Entre 0 y 50",fit_si$strata[2]), rep("Mayor a 50",fit_si$strata[3]))), hormon = "Con")
+
+
+
+data_hormon_no = data %>% filter(hormon == 0)
+
+
+fit_no = survfit(Surv(dtime/365, death) ~ er2, 
+                 type="fleming-harrington", 
+                 data=data_hormon_no)
+
+dat_no <- data.frame(surv = fit_no$surv, tiempo = fit_no$time, trat = as.factor(c(rep("Igual a 0",fit_no$strata[1]), rep("Entre 0 y 50",fit_no$strata[2]), rep("Mayor a 50",fit_no$strata[3]))),hormon = "Sin")
+
+dat = rbind(dat_si,dat_no)
+
+dat$trat = factor(dat$trat, levels = c("Igual a 0", "Entre 0 y 50", "Mayor a 50"))
+dat$hormon = factor(dat$hormon, levels = c("Sin", "Con"))
+
+
+ggplot(data = dat) +
+    geom_step(aes(x = tiempo, y = surv, color = hormon)) +
+    facet_wrap(~trat)+
+    labs(x = "Años", y = "Prob. de supervivencia estimada") +
+    scale_y_continuous(limits = c(0,1))+
+    scale_linetype_discrete(name = "")+
+    ggtitle("Supervivencia estimada de las mujeres según si se le aplicó el
+tratamiento hormonal o no controlando por la cantidad de 
+receptores de estrógeno")+
+    scale_color_discrete(name = "Tratamiento hormonal")+
+  theme_bw()+theme(legend.position = 'bottom') + theme(title = element_text(size = 10))
+
+
+
+
+
+```
