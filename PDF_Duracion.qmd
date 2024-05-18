@@ -1,0 +1,92 @@
+---
+title: "PDF_Duracion"
+format: pdf
+editor: visual
+---
+```{r, echo=FALSE}
+library(tidyverse)
+library(survival)
+library(survminer)
+
+data <- rotterdam %>%
+  filter(year > 1991) %>%
+  ## Eliminar las variables que no se utilizan
+  select(-c(nodes, rtime, recur))
+
+censurados <- round(mean(data$death), 2)*100
+```
+
+# Introducción
+
+De acuerdo a datos de la Organización Mundial de la Salud (OMS), cada año se producen 1,38 millones de nuevos casos y 458.000 muertes por cáncer de mama. Por este motivo se dio el interés de hacer un análisis de supervivencia de las víctimas de esta patología.
+
+Para ello se cuenta con un conjunto de datos de 444 mujeres que tuvieron cáncer de mamas y se observa su supervivencia en días desde la **operación primaria** del tumor hasta la **muerte** del paciente. Se toman aquellos pacientes que fueron operados en 1992 y 1993 en la ciudad de Rotterdam.
+
+Si bien el `r censurados`% de los datos se encuentran censurados por derecha, el análisis de supervivencia nos permite continuar con el estudio.
+
+## Datos y objetivos
+
+Dentro de la base de datos se cuentan con las siguientes variables observadas de cada paciente:
+
+1.  Tiempo: Cantidad de días desde la operación hasta la muerte del paciente o pérdida de seguimiento
+2.  Muerte: Sie el paciente murió o fue una censura
+3.  Quimioterapia: Si el paciente hizo o no un trtamiento de quimioterapia
+4.  Hormonas: Si el paciente usaba un tratamiento hormonal o no
+5.  Menopausia: Si el paciente tenía menopaucia o no
+6.  Edad: Edad del paciente al hacerse la operación primaria
+7.  Tamaño del tumor: Si el tamaño del tumor es menor o igual a 20mm, entre 20mm y 50mm o mayor a 50mm
+8.  Grado: Grado del tumor (grado 2 o 3)
+9.  Receptores de progesterona: Cantidad receptores de progesterona (en fmol/l)
+10. Receptores de estrógeno: Cantidad receptores de estrógeno (en fmol/l)
+
+El objetivo principal de este informe es analizar la influencia de las variables provistas por el conjuntos de datos en el tiempo de supervivencia de las mujeres con cáncer de mama. Observar bajo qué condiciones la mortalidad del cáncer de mama es menor. Realizar estimaciones puntuales y por intervalos de la supervivencia de los pacientes.
+
+# Análisis Primario de Datos
+
+La supervivencia general estimada por el conjunto de datos de las mujeres con cáncer de mama es la siguiente:
+
+```{r, fig.cap = "Supervivencia estimada de las mujeres con cáncer de mama"}
+fh = survfit(Surv(dtime/365, death) ~ 1, 
+                  type="fleming-harrington", 
+                  data=data)
+
+ggsurvplot(fit = fh, data = data,
+           conf.int = F,
+           censor.shape = 20, 
+           xlab = "Días", 
+           ylab = "Prob. de supervivencia estimada",
+           legend.title="",
+           palette = c("purple"),
+           legend.labs = "Todas las personas"
+           # ,title = "Supervivencia estimada según tamaño del tumor"
+           )
+
+hazard_general <- round(100 * 365 * sum(data$death) / sum(data$dtime), 2)
+```
+
+En general, cada 100 mujeres que padezcan cáncer de mamas, la tasa de muerte es de `r hazard_general`personas/año  y el 72% de ellas sobrevive más de 8 años.
+
+Se vio de interés analizar la supervivencia de los paciente controlando por el tamaño del tumor. En dicho caso las funciones de supervivencia varían de la siguiente manera.
+
+```{r}
+data = data %>%  mutate(size_num = case_when(data$size == "<=20" ~ 1, data$size == "20-50" ~ 2, data$size == ">50" ~ 3)) 
+
+
+fh_size = survfit(Surv(dtime/365, death) ~ size_num, 
+                  type="fleming-harrington", 
+                  data=data)
+
+ggsurvplot(fit = fh_size, data = data,
+           conf.int = F, pval = T,
+           censor.shape = 20, 
+           xlab = "Años", 
+           ylab = "Prob. de supervivencia estimada",
+           break.x.by = 1,
+           test.for.trend = T,
+           legend.title="",
+           palette = c("purple", "lightgreen", "skyblue"),
+           legend.labs = c("Menor o igual a 20mm", "Entre 20 y 50mm", "Mayor a 50mm"),
+           title = "Supervivencia estimada para las mujeres según el tamaño del tumor")
+```
+
+Existe un ordenamiento monótono donde la experiencia de supervivencia **disminuye** al tratarse de tumores más grandes, es decir, a mayor el tamaño del tumor, menor la supervivencia.
