@@ -213,5 +213,64 @@ ggplotly(
     theme_bw()
 )
 
- 
+# ------------------------------------------------------------------------------
+# --------------------------- Modelos de Cox -----------------------------------
+# ------------------------------------------------------------------------------
+View(data)
+coxph(Surv(dtime/365, death) ~ age, data = data, ties = "breslow")
+0.4482
+coxph(Surv(dtime/365, death) ~ meno, data = data, ties = "breslow")
+0.4983
+coxph(Surv(dtime/365, death) ~ size, data = data, ties = "breslow")
+0
+coxph(Surv(dtime/365, death) ~ grade, data = data, ties = "breslow")
+0.002
+coxph(Surv(dtime/365, death) ~ pgr, data = data, ties = "breslow")
+0
+coxph(Surv(dtime/365, death) ~ er, data = data, ties = "breslow")
+0.0052
+coxph(Surv(dtime/365, death) ~ hormon, data = data, ties = "breslow")
+0.0071
+coxph(Surv(dtime/365, death) ~ chemo, data = data, ties = "breslow")
+0.0787
 
+modelo <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + er + hormon, data = data, ties = "breslow")
+modelosh <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + er, data = data, ties = "breslow")
+anova(modelo, modelosh)
+# Es 0
+
+modelo <- modelosh
+modeloser <- coxph(Surv(dtime/365, death) ~ size + pgr + grade, data = data, ties = "breslow")
+anova(modelo, modeloser)
+# Es 0
+
+modelo <- modeloser
+modelosgr <- coxph(Surv(dtime/365, death) ~ size + pgr, data = data, ties = "breslow")
+anova(modelo, modelosgr)
+# 0? cachi 0
+
+modeloint <- coxph(Surv(dtime/365, death) ~ size*pgr + grade, data = data, ties = "breslow")
+anova(modelo, modeloint)
+# Nada che
+
+modeloint <- coxph(Surv(dtime/365, death) ~ size + pgr*grade, data = data, ties = "breslow")
+anova(modelo, modeloint)
+# Menos todavia
+
+modeloint <- coxph(Surv(dtime/365, death) ~ size*grade + pgr, data = data, ties = "breslow")
+anova(modelo, modeloint)
+# Nada por acá
+
+# Nos quedamos con "modelo"
+
+# Probamos linearidad de pgr
+
+datos_pgr <- data %>% mutate(pgr_dum = cut(pgr, breaks = c(-1, quantile(data$pgr)[2], quantile(data$pgr)[3],quantile(data$pgr)[4], Inf)))
+table(datos_pgr$pgr_dum)
+
+modelodum <- coxph(Surv(dtime/365, death) ~ size + pgr_dum + grade, data = datos_pgr, ties = "breslow")
+anova(modelo, modelodum)
+# No rechazo Ho, entonces es lineal, me quedo con "modelo"
+
+# Interpretación de modelo
+summary(modelo)
