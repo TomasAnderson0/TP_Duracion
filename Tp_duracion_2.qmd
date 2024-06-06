@@ -84,7 +84,7 @@ Dentro de la base de datos se cuentan con las siguientes variables observadas de
 2.  Muerte: Si el paciente murió o fue una censura.
 3.  Quimioterapia: Si el paciente hizo o no un tratamiento de quimioterapia.
 4.  Hormonas: Si el paciente usaba un tratamiento hormonal o no.
-5.  Menopausia: Si el paciente tenía menopaucia o no.
+5.  Menopausia: Si el paciente tenía menopausia o no.
 6.  Edad: Edad del paciente al hacerse la operación primaria.
 7.  Tamaño del tumor: Si el tamaño del tumor es menor o igual a 20mm, entre 20mm y 50mm o mayor a 50mm.
 8.  Grado: Grado del tumor (grado 2 o 3).
@@ -93,41 +93,16 @@ Dentro de la base de datos se cuentan con las siguientes variables observadas de
 
 
 El objetivo principal de este informe es analizar la influencia de las variables provistas
-por el conjuntos de datos en el tiempo de supervivencia de las mujeres con cáncer de
+por el conjunto de datos en el tiempo de supervivencia de las mujeres con cáncer de
 mama. Observar bajo qué condiciones la mortalidad del cáncer de mama es menor. Realizar
 estimaciones puntuales y por intervalos de la supervivencia de los pacientes.
 
 \newpage
 
 
-
-
-
-
-
-
-
 # Selección de variables
 
-
-El modelo completo con todas las variables queda explicitado en la siguiente función:
-
-$$h_i(t) = exp(\boldsymbol{\beta}\mathbf{x}_i)h_0(t)$$ Donde 
-
-$$\boldsymbol{\beta} = \begin{bmatrix} \beta_1, &\beta_2, & \beta_3, & \beta_4, & \beta_5, & \beta_6, & \beta_7, & \beta_8, & \beta_9 \end{bmatrix}$$ y $$\boldsymbol{x}_i = \begin{bmatrix} E_i \\ M_i \\ T_{1i} \\ T_{2i} \\ G_i \\ P_i \\ Est_i \\ H_i \\ C_i \end{bmatrix}$$
-
--   $E_i:$  Dummy asociada a la edad al momento de la cirugía (en años) del i-ésimo paciente.
--   $M_i:$ :  Dummy asociada al estado menopáusico del i-ésimo paciente donde es 0 es premenopáusico y 1 si es postmenopáusico.
--   $T_{1i}:$  Dummy asociada al tamaño del tumor del i-ésimo paciente donde es 1 si esta entre 20 y 50mm, y 0 en otro caso.
--   $T_{2i}:$ Dummy asociada al tamaño del tumor del i-ésimo paciente donde es 1 si es mayor a 50mm, y 0 en otro caso.
--   $G_i:$ Dummy asociada al grado de diferenciación del tumor del i-ésimo paciente donde es 1 si el grado es 3, y 0 si es 2.
--   $P_i:$ Cantidad de receptores de progesterona (en fmol/l) del i-ésimo paciente.
--   $Est_i:$ Cantidad de receptores de estrógeno (en fmol/l) del i-ésimo paciente. 
--   $H_i:$ Dummy asociada a si el i-ésimo paciente recibio un tratamiento hormonal donde es 1 si lo recibió, y 0 si no.
--   $C_i:$ Dummy asociada a si el i-ésimo paciente recibió quimoterapia donde es 1 si lo recibió, y 0 si no.
-
-
-Se tienen muchas variables que pueden llegar a considerarse para el análisis pero se busca aquellas que puedan significar un cambio en la supervivencia de los pacientes al construir un modelo. Para ello se observa qué variable en forma marginal produce hay un cambio significativo de la supervivencia de los pacientes en un modelo de razón de hazards proporcionales de Cox.
+Se tienen muchas variables que pueden llegar a considerarse para el análisis, pero se busca aquellas que puedan significar un cambio en la supervivencia de los pacientes al construir un modelo. Para ello se observa qué variable en forma marginal produce hay un cambio significativo de la supervivencia de los pacientes en un modelo de razón de hazards proporcionales de Cox.
 
 ```{r, echo = FALSE}
 modelo1 = coxph(Surv(dtime/365, death) ~ age, data = data, ties = "breslow")
@@ -164,30 +139,46 @@ p_value_m8 = 1-pchisq(2*(modelo8$loglik[2]-modelo8$loglik[1]), 1)
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Variables}& \textbf{gl} & $\boldsymbol{G}^2$ & \textbf{p-value} \\ \hline
-Edad & 1  &  `r round(2*(modelo1$loglik[2]-modelo1$loglik[1]),3)` & `r round(p_value_m1, 3)`     \\ \hline
-Menopausia  & 1  & `r round(2*(modelo2$loglik[2]-modelo1$loglik[1]),3)`     & `r round(p_value_m2, 3)`       \\ \hline
-Tamaño del tumor & 2  & `r round(2*(modelo3$loglik[2]-modelo1$loglik[1]),3)`     & $<0.001$     \\ \hline
-Grado del tumor  & 1  & `r round(2*(modelo4$loglik[2]-modelo1$loglik[1]),3)`     & `r round(p_value_m4, 3)`      \\ \hline
-Receptores de progesterona & 1  & `r round(2*(modelo5$loglik[2]-modelo1$loglik[1]),3)`     & $<0.001$    \\ \hline
-Receptores de estrógeno    & 1  & `r round(2*(modelo6$loglik[2]-modelo1$loglik[1]),3)`   & `r round(p_value_m6, 3)`      \\ \hline
-Hormonas  & 1  & `r round(2*(modelo7$loglik[2]-modelo1$loglik[1]),3)`    & `r round(p_value_m7, 3)`      \\ \hline
-Quimioterapia & 1  & `r round(2*(modelo8$loglik[2]-modelo1$loglik[1]),3)`    & `r round(p_value_m8, 3)`     \\ \hline
-\end{tabular}\caption{Comparaciones de los modelos}
+Edad & 1  &  `r round(2*(modelo1$loglik[2]-modelo1$loglik[1]),3)` & \textcolor{red}{`r round(p_value_m1, 3)`}     \\ \hline
+Menopausia  & 1  & `r round(2*(modelo2$loglik[2]-modelo1$loglik[1]),3)`     & \textcolor{red}{`r round(p_value_m2, 3)`}       \\ \hline
+Tamaño del tumor & 2  & `r round(2*(modelo3$loglik[2]-modelo1$loglik[1]),3)`     & \textcolor{ForestGreen}{$<0.001$}     \\ \hline
+Grado del tumor  & 1  & `r round(2*(modelo4$loglik[2]-modelo1$loglik[1]),3)`     & \textcolor{ForestGreen}{`r round(p_value_m4, 3)`}      \\ \hline
+Receptores de progesterona & 1  & `r round(2*(modelo5$loglik[2]-modelo1$loglik[1]),3)`     & \textcolor{ForestGreen}{$<0.001$}    \\ \hline
+Receptores de estrógeno    & 1  & `r round(2*(modelo6$loglik[2]-modelo1$loglik[1]),3)`   & \textcolor{ForestGreen}{`r round(p_value_m6, 3)`}      \\ \hline
+Hormonas  & 1  & `r round(2*(modelo7$loglik[2]-modelo1$loglik[1]),3)`    & \textcolor{ForestGreen}{`r round(p_value_m7, 3)`}      \\ \hline
+Quimioterapia & 1  & `r round(2*(modelo8$loglik[2]-modelo1$loglik[1]),3)`    & \textcolor{ForestGreen}{`r round(p_value_m8, 3)`}     \\ \hline
+\end{tabular}\caption{Modelos marginales}
 \label{table:1}
 \end{center}
 \end{table}
 
 Al utilizar un $\alpha = 0.10$, se observa en la tabla 1 que las variables que podrían aportar a la construcción de un modelo de Cox son: 
+
 -   El tamaño del tumor.
 -   El grado del tumor.
 -   Los receptores de progesterona.
 -   Los receptores de estrógeno.
 -   Si recibió tratamiento hormonal o no.
--   Si recibió quimoterapia o no.
+-   Si recibió quimioterapia o no.
 
 Por lo que se plantea un modelo con dichas variables.
 
 $$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i + \beta_9 Q_i)h_0(t)$$ 
+
+
+Donde:
+
+-   $T_{1i}:$  Dummy asociada al tamaño del tumor del i-ésimo paciente donde es 1 si está entre 20 y 50mm, y 0 en otro caso.
+-   $T_{2i}:$ Dummy asociada al tamaño del tumor del i-ésimo paciente donde es 1 si es mayor a 50mm, y 0 en otro caso.
+-   $G_i:$ Dummy asociada al grado de diferenciación del tumor del i-ésimo paciente donde es 1 si el grado es 3, y 0 si es 2.
+-   $P_i:$ Cantidad de receptores de progesterona (en fmol/l) del i-ésimo paciente.
+-   $Est_i:$ Cantidad de receptores de estrógeno (en fmol/l) del i-ésimo paciente. 
+-   $H_i:$ Dummy asociada a si el i-ésimo paciente recibió un tratamiento hormonal donde es 1 si lo recibió, y 0 si no.
+-   $Q_i:$ Dummy asociada a si el i-ésimo paciente recibió quimioterapia donde es 1 si lo recibió, y 0 si no.
+
+
+
+
 Para ver si las variables contribuyen significativamente al estar las demás presentes, se procede a sacar en orden las variables con menor significación marginal en los tests marginales y se compara con el modelo que sí la incluye. En el caso que el sacar la variable no represente un cambio significativo del modelo, se optará por dejarla afuera del modelo y seguir con los pasos. Una vez que se llegue a las variables que sí aportan al modelo, se probará las interacciones entre ellas.
 
 ```{r, echo = FALSE}
@@ -247,40 +238,42 @@ p9 = round(anova9$`Pr(>|Chi|)`[2], 3)
 \hline
 Variables & Hipótesis & gl & $G^2_{diff}$ & p-value \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$  & $H_0)\beta_9=0 \quad H_1)\beta_9\ne0$        & 1  &     `r round(anova1$Chisq[2], 3)`   &    `r round(p1, 3)`   \\ 
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$  & $H_0)\beta_9=0 \quad H_1)\beta_9\ne0$        & 1  &     `r round(anova1$Chisq[2], 3)`   &    \textcolor{red}{`r round(p1, 3)`}   \\ 
 $ + \beta_9 Q_i$  &                                               &   &            &      \\ \hline
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$       & $H_0)\beta_8=0 \quad H_1)\beta_8\ne0$      & 1  & `r round(anova2$Chisq[2], 3)`            & `r p2`     \\ \hline
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$       & $H_0)\beta_8=0 \quad H_1)\beta_8\ne0$      & 1  & `r round(anova2$Chisq[2], 3)`            & \textcolor{red}{`r p2`}     \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i$      & $H_0)\beta_7=0 \quad H_1)\beta_7\ne0$        & 1  & `r round(anova3$Chisq[2], 3)`           & `r p3`      \\ \hline
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i$      & $H_0)\beta_7=0 \quad H_1)\beta_7\ne0$        & 1  & `r round(anova3$Chisq[2], 3)`           & \textcolor{red}{`r p3`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_6=0 \quad H_1)\beta_6\ne0$ & 1  & `r round(anova4$Chisq[2], 3)`           & `r p4`      \\ \hline
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_6=0 \quad H_1)\beta_6\ne0$ & 1  & `r round(anova4$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ \hline
 
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ &  $H_0)\beta_{3}=\beta_{4}=0 $        & 2  & `r round(anova5$Chisq[2], 3)`           & `r p5`      \\ 
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ &  $H_0)\beta_{3}=\beta_{4}=0 $        & 2  & `r round(anova5$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ 
  &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_5=0 \quad H_1)\beta_5\ne0$        & 1  & `r round(anova6$Chisq[2], 3)` & `r p6`      \\ \hline
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_5=0 \quad H_1)\beta_5\ne0$        & 1  & `r round(anova6$Chisq[2], 3)` & \textcolor{ForestGreen}{`r p6`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} P_i + \beta_{46} T_{2i} P_i $      & $H_0)\beta_{36}=\beta_{46}=0$ & 2  & `r round(anova7$Chisq[2], 3)`           & `r p7`      \\ 
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} P_i + \beta_{46} T_{2i} P_i $      & $H_0)\beta_{36}=\beta_{46}=0$ & 2  & `r round(anova7$Chisq[2], 3)`           & \textcolor{red}{`r p7`}      \\ 
 
  &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
  
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{56} G_i P_i$  & $H_0)\beta_{56}=0 \quad H_1)\beta_{56}\ne0$      & 1  & `r round(anova8$Chisq[2], 3)`           & `r p8`      \\ \hline
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{56} G_i P_i$  & $H_0)\beta_{56}=0 \quad H_1)\beta_{56}\ne0$      & 1  & `r round(anova8$Chisq[2], 3)`           & \textcolor{red}{`r p8`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} G_i + \beta_{46} T_{2i} G_i $       & $H_0)\beta_{35}=\beta_{45}=0$ & 1  & `r round(anova9$Chisq[2], 3)`           & `r p9`      \\ 
+$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} G_i + \beta_{46} T_{2i} G_i $       & $H_0)\beta_{35}=\beta_{45}=0$ & 1  & `r round(anova9$Chisq[2], 3)`           & \textcolor{red}{`r p9`}      \\ 
 
  &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
-\end{tabular}\caption{Comparaciones de los modelos}
+\end{tabular}\caption{Seleción de variables hacia atrás}
 \label{table:1}
 \end{table}
 
 
 
-Por lo que nos quedamos con el siguente modelo:
+Por lo que se elige el siguiente modelo con las siguientes variables:
 
-$$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i})h_0(t)$$ 
+-   Tamaño del tumor.
+-   Grado del tumor.
+-   Receptores de progesterona.
 
-Para ver si se introduce al efecto de los receptores de progesterona como una variable cuantitativa, se realiza un test de linealidad
+Para ver si se introduce al efecto de los receptores de progesterona como una variable cuantitativa, se realiza un test de linealidad.
 
 ```{r, echo = FALSE, eval = FALSE}
 datos_pgr <- data %>% mutate(pgr_dum = cut(pgr, breaks = c(-1, quantile(data$pgr)[2], quantile(data$pgr)[3],quantile(data$pgr)[4], Inf)))
@@ -302,7 +295,8 @@ Progesterona & Frecuencia absolta \\ \hline
 1-23         & 102                \\ \hline
 24-151       & 110                \\ \hline
 $151$        & 110                \\ \hline
-\end{tabular}
+\end{tabular}\caption{Progesterona categorizada}
+\label{table:1}
 \end{center}
 \end{table}
 
@@ -314,16 +308,17 @@ $H_0)$ El efecto de los receptores de progesterona es lineal
 
 $H_1)$ El efecto de los receptores de progesterona no es lineal
 
-Se obtiene una estadistica de 0.819 con un p-value asociado de 0.664, por lo que se decide conservar la variable como cuantitativa.
+Se obtiene una estadística de 0.819 con un p-value asociado de 0.664, por lo que se decide conservar la variable como cuantitativa.
 
-El modelo más parcimonioso y por lo tanto el que se decide usar para su interpretación resulta el siguiente:
+El modelo más parsimonioso y por lo tanto el que se decide usar para su interpretación resulta el siguiente:
 
+$$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i})h_0(t)$$ 
 
 
 
 # Validación del modelo
 
-Para validar el supuesto donde el efecto de las variables usadas en la construcción del modelo no dependen del tiempo se procede a hacer un análisis de residuos de Schoenfeld:
+Para validar el supuesto de que el efecto de las variables usadas en la construcción del modelo no dependen del tiempo se procede a hacer un análisis de residuos de Schoenfeld:
 
 
 ```{r, echo = FALSE}
@@ -378,19 +373,21 @@ $H_0)$ El efecto de la j-ésima variable no cambia durante el tiempo
 $H_1)$ El efecto de la j-ésima variable cambia durante el tiempo 
 
 \begin{table}[H]
+\begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
 Variables & $G^2$  & p-value \\ \hline
-Tamaño         & 2.982 & 0.225    \\ \hline
-Receptores de progesterona & 0.884 &  0.347     \\ \hline
-Grado 3 del tumor   & 1.055 & 0.304    \\ \hline
-\end{tabular}\caption{Comparaciones de los modelos}
+Tamaño         & 2.982 & \textcolor{red}{0.225}    \\ \hline
+Receptores de progesterona & 0.884 &  \textcolor{red}{0.347}     \\ \hline
+Grado 3 del tumor   & 1.055 & \textcolor{red}{0.304}    \\ \hline
+\end{tabular}\caption{Efectos a través del tiempo}
 \label{table:1}
+\end{center}
 \end{table}
 
 Al no rechazar ningún test, se considera que se cumple el supuesto de homogeneidad de efecto a medida que avanza el tiempo.
 
-```{r, echo = FALSE, warning = FALSE, fig.height=2.5}
+```{r, echo = FALSE, warning = FALSE}
 datos_pgr_sup <- data %>% mutate(pgr_dum = cut(pgr, breaks = c(-1, quantile(data$pgr)[3], Inf)))
 datos_pgr_abajo <- datos_pgr_sup %>% filter(pgr_dum %in% "(-1,23]")
 
@@ -431,30 +428,27 @@ graficamodelo_arriba <- data.frame(logLogSurvEst = log(-log(survmodelo_arriba$su
   filter(logLogSurvEst != Inf) %>%
   filter(!duplicated(logLogSurvEst))
 
+graficodatos = rbind(graficamodelo_abajo,graficamodelo_arriba)
+graficodatos$var = c(rep("Progesterona <=23", nrow(graficamodelo_abajo)), rep("Progesterona >23", nrow(graficamodelo_arriba)))
 
-ggplot(graficamodelo_abajo) +
+
+ggplot(graficodatos) +
   aes(x = logSurvTime, y = logLogSurvEst, color = todo_cat) +
   geom_line() +
+  facet_wrap(~ var)+
   geom_point(size = 2) +
   lims(x = c(-1, 2), y = c(-4.5, .5)) +
-  labs(x = "Log(t)", y = "Log[H(t)]", title = "Gráfico del Logaritmo de la Función Hazard acumulada", color = "Grupos") +
+  labs(x = "Log(t)", y = "Log[H(t)]", title = "Logaritmo de la Función Hazard acumulada vs Logaritmo del tiempo", color = "Grupos") +
   scale_color_manual(values = c("darkred", "steelblue", "orange", "darkgreen", "black", "grey")) +
-  theme_bw() + theme(legend.position = "none")
-
-ggplot(graficamodelo_arriba) +
-  aes(x = logSurvTime, y = logLogSurvEst, color = todo_cat) +
-  geom_line() +
-  geom_point(size = 2) +
-  lims(x = c(-1, 2), y = c(-4.5, .5)) +
-  labs(x = "Log(t)", y = "Log[H(t)]", title = "Gráfico del Logaritmo de la Función Hazard acumulada", color = "Grupos") +
-  scale_color_manual(values = c("darkred", "steelblue", "orange", "darkgreen", "black", "grey")) +
-  theme_bw()
+  theme_bw() + theme(legend.position = "top")
 
 
 ```
 Parece que las distancias entre los grupos permanecen bastante constantes a través del logaritmo del tiempo, lo que indica que se está dando el cumplimiento de hazards proporcionales. 
 
 # Resultados
+
+
 
 Una vez comprobados los supuestos, se procede a interpretar las estimaciones del modelo final.
 
@@ -463,19 +457,23 @@ coef = modelo$coefficients
 ```
 
 
+$$h_i(t) = exp(0.497  T_{1i} + 1.326  T_{2i} + 0.453  G_{i} + -0.003P_{i})h_0(t)$$ 
+donde $h_0(t)$ es la función hazard para un paciente con un tumor de tamaño menor a 20mm, de grado 2 y con 0 receptores de progesterona.
+
 \begin{table}[H]
 \begin{center}
 \begin{tabular}{|l|l|l|l|}
 \hline
 Parámetros & Estimación & 2.75\% & 97.75\% \\ \hline
-$e^{\beta_3}$  & `r round(exp(coef[1]), 3)`   & `r round(exp(coef[1]-1.96*0.2115728), 3)`      & `r round(exp(coef[1]+1.96*0.2115728), 3)`      \\ \hline
-$e^{\beta_4}$  & `r round(exp(coef[2]), 3)`  & `r round(exp(coef[2]-1.96*0.2325955), 3)`       & `r round(exp(coef[2]+1.96*0.2325955), 3)`   \\ \hline
-$e^{\beta_5}$  & `r round(exp(coef[4]), 3)`  & `r round(exp(coef[4]-1.96*0.2522358), 3)`       & `r round(exp(coef[4]+1.96*0.2522358), 3)`      \\ \hline
-$e^{\beta_6}$  & `r round(exp(coef[3]), 3)`   & `r round(exp(coef[3]-1.96*0.0007422), 3)`       & `r round(exp(coef[3]+1.96*0.0007422), 3)`    \\ \hline
-\end{tabular}\caption{Comparaciones de los modelos}
+$e^{\hat{\beta_3}}$  & `r round(exp(coef[1]), 3)`   & `r round(exp(coef[1]-1.96*0.2115728), 3)`      & `r round(exp(coef[1]+1.96*0.2115728), 3)`      \\ \hline
+$e^{\hat{\beta_4}}$  & `r round(exp(coef[2]), 3)`  & `r round(exp(coef[2]-1.96*0.2325955), 3)`       & `r round(exp(coef[2]+1.96*0.2325955), 3)`   \\ \hline
+$e^{\hat{\beta_5}}$  & `r round(exp(coef[4]), 3)`  & `r round(exp(coef[4]-1.96*0.2522358), 3)`       & `r round(exp(coef[4]+1.96*0.2522358), 3)`      \\ \hline
+$e^{\hat{\beta_6}}$  & `r round(exp(coef[3]), 3)`   & `r round(exp(coef[3]-1.96*0.0007422), 3)`       & `r round(exp(coef[3]+1.96*0.0007422), 3)`    \\ \hline
+\end{tabular}\caption{Estimaciones de las razones de hazard de la basal cambiando el valor de una variable}
 \label{table:1}
 \end{center}
 \end{table}
+
 
 La tasa de muerte para los pacientes que tienen un tumor de grado 3 es 57.4% más grande que el de los que tienen uno de grado 2, manteniendo las demás variables constantes. El intervalo de confianza de la razón de hazard cubre el 1, pero puede interpretarse como que la tasa de muerte para los pacientes con un tumor de grado 3 es igual o mayor a las de los de grado 2.
 
@@ -483,6 +481,24 @@ La tasa de muerte para los pacientes que tienen un tumor de grado 3 es 57.4% má
 Al aumentar en 10 unidades los receptores de progesterona, la tasa de muerte para los pacientes se ve disminuida en `r (1-round(exp(coef[3]*10), 3))*100`% al mantener las demás variables constantes.
 
 La tasa de muerte para los pacientes que tienen un tumor de tamaño de 20 a 50 mm es un 64.3% mayor que el de los que tienen menor tamaño cuando las demás variables se mantienen constantes. En el caso de los pacientes con un tumor mayor a 50mm, su tasa es un 276.8% mayor que los que tienen 20mm o menos.
+
+# Conclusión
+
+Al terminar el análisis, se puede afirmar lo siguiente:
+
+La edad de los pacientes no influye en su supervivencia, es decir, que una persona joven tiene la misma supervivencia media que otra con una edad avanzada. Tampoco es afectada dicha supervivencia por si el paciente recibió quimioterapia, que es un resultado paupérrimo al ser un tratamiento con efectos secundarios problemáticos. Además, no se ve modificada por si son menopáusicas o si recibieron algún tratamiento hormonal. Los receptores de estrógeno no fueron significativos al ya estar analizando los de progesterona, ya que dichas variables están fuertemente relacionadas.
+
+Las dos variables que están relacionadas con características del tumor resultaron ser importante al momento de medir la supervivencia del paciente, por lo que esto indica una relación con el tipo de tumor y la tasa de muerte. Entonces, es importante una detección temprana, ya que favorece a la supervivencia por tener un tumor con características menos malignas. Y por último, los receptores de progesterona afecta a la mortalidad, por lo que las hormonas forman parte de la explicación de la supervivencia.
+
+
+
+
+
+
+
+
+
+
 
 
 
