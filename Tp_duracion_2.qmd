@@ -1,0 +1,216 @@
+---
+format: pdf
+editor: visual
+lang: "es"
+header-includes:
+  - \usepackage{ragged2e}
+  - \usepackage{hyperref}
+---
+
+
+\Centering
+
+\vspace{3cm}
+
+
+\pagenumbering{gobble}
+
+\vspace{5cm}
+
+\large
+LICENCIATURA EN ESTADÍSTICA
+
+\vspace{1cm}
+
+\large
+\Huge
+"Análisis de Duración sobre el cáncer de mamas"
+\Huge
+\newline
+\vspace{0.3cm}
+
+\normalsize
+Trabajo Práctico: Segunda presentación 
+\vspace{1cm}
+\begin{center}
+    \includegraphics[width=.5\linewidth]{cancer-mama.jpg}
+\end{center}
+\vspace{2cm}
+Autores: Tomás Anderson - Alejo Vaschetti
+
+Docentes: Nora Arnesi, Gabriela Boggio, Guillermina Harvey y Victorio Costa   
+
+20/05/2024
+\normalsize
+
+
+\newpage
+\pagenumbering{arabic}
+
+\RaggedRight
+\newpage
+
+```{r, echo=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+library(survival)
+library(tidyverse)
+library(survminer)
+library(ggplot2)
+library(ggmosaic)
+library(plotly)
+library(treemapify)
+library(gridExtra)
+source("Funciones.R")
+data <- rotterdam %>%
+  filter(year > 1991) %>%
+  ## Eliminar las variables que no se utilizan
+  select(-c(nodes, rtime, recur))
+
+censurados <- round(mean(data$death), 2)*100
+```
+# Introducción
+
+De acuerdo a datos de la Organización Mundial de la Salud (OMS), cada año se producen 1,38 millones de nuevos casos y 458.000 muertes por cáncer de mama. Por este motivo se dio el interés de hacer un análisis de supervivencia de las víctimas de esta patología.
+
+Para ello se cuenta con un conjunto de datos de 444 mujeres que tuvieron cáncer de mamas y se observa su supervivencia en días desde la **operación primaria** del tumor hasta la **muerte** del paciente. Se toman aquellos pacientes que fueron operados en 1992 y 1993 en la ciudad de Rotterdam.
+
+Si bien el `r 100-censurados`% de los datos se encuentran censurados por derecha, el análisis de supervivencia nos permite continuar con el estudio.
+
+## Datos y objetivos
+
+Dentro de la base de datos se cuentan con las siguientes variables observadas de cada paciente:
+
+1.  Tiempo: Cantidad de días desde la operación hasta la muerte del paciente o pérdida de seguimiento.
+2.  Muerte: Si el paciente murió o fue una censura.
+3.  Quimioterapia: Si el paciente hizo o no un tratamiento de quimioterapia.
+4.  Hormonas: Si el paciente usaba un tratamiento hormonal o no.
+5.  Menopausia: Si el paciente tenía menopaucia o no.
+6.  Edad: Edad del paciente al hacerse la operación primaria.
+7.  Tamaño del tumor: Si el tamaño del tumor es menor o igual a 20mm, entre 20mm y 50mm o mayor a 50mm.
+8.  Grado: Grado del tumor (grado 2 o 3).
+9.  Receptores de progesterona: Cantidad de receptores de progesterona (en fmol/l).
+10. Receptores de estrógeno: Cantidad de receptores de estrógeno (en fmol/l).
+
+
+El objetivo principal de este informe es analizar la influencia de las variables provistas
+por el conjuntos de datos en el tiempo de supervivencia de las mujeres con cáncer de
+mama. Observar bajo qué condiciones la mortalidad del cáncer de mama es menor. Realizar
+estimaciones puntuales y por intervalos de la supervivencia de los pacientes.
+
+\newpage
+
+
+
+
+
+
+
+
+
+# Selección de variables
+
+
+El modelo completo con todas las variables queda explicitado en la siguiente función:
+
+$$h_i(t) = exp(\boldsymbol{\beta}\boldsymbol{x}_i)h_0(t)$$ Donde 
+
+
+$$\boldsymbol{\beta} = \begin{bmatrix} \beta_1, &\beta_2, & \beta_3, & \beta_4, & \beta_5, & \beta_6, & \beta_7, & \beta_8, & \beta_9 \end{bmatrix}$$ y $$\boldsymbol{x}_i = \begin{bmatrix} E_i \\ M_i \\ T_{1i} \\ T_{2i} \\ G_i \\ P_i \\ Est_i \\ H_i \\ C_i \end{bmatrix}$$
+
+-   $E_i:$  Dummy asociada a la edad al momento de la cirugía (en años) del i-esimo paciente.
+-   $M_i:$ :  Dummy asociada al estado menopáusico del i-esimo paciente donde es 0 es premenopáusico y 1 si es postmenopáusico.
+-   $T_{1i}:$  Dummy asociada al tamaño del tumor del i-esimo paciente donde es 1 si esta entre 20 y 50mm, y 0 en otro caso.
+-   $T_{2i}:$ Dummy asociada al tamaño del tumor del i-esimo paciente donde es 1 si es mayor a 50mm, y 0 en otro caso.
+-   $G_i:$ Dummy asociada al grado de diferenciación del tumor del i-esimo paciente donde es 1 si el grado es 3, y 0 si es 2.
+-   $P_i:$ Cantidad de receptores de progesterona (en fmol/l) del i-esimo paciente.
+-   $Est_i:$ Cantidad de receptores de estrógeno (en fmol/l) del i-esimo paciente. 
+-   $H_i:$ Dummy asociada a si el i-esimo paciente recibio un tratamiento hormonal donde es 1 si lo recibio, y 0 si no.
+-   $C_i:$ Dummy asociada a si el i-esimo paciente recibio quimoterapia donde es 1 si lo recibio, y 0 si no.
+
+
+Primero se observa para que variable en forma marginal produce hay un cambio significativo de la supervivencia de los pacientes.
+
+```{r, echo = FALSE}
+modelo1 = coxph(Surv(dtime/365, death) ~ age, data = data, ties = "breslow")
+
+modelo2 = coxph(Surv(dtime/365, death) ~ meno, data = data, ties = "breslow")
+
+modelo3 =coxph(Surv(dtime/365, death) ~ size, data = data, ties = "breslow")
+
+modelo4 =coxph(Surv(dtime/365, death) ~ grade, data = data, ties = "breslow")
+
+modelo5 =coxph(Surv(dtime/365, death) ~ pgr, data = data, ties = "breslow")
+
+modelo6 =coxph(Surv(dtime/365, death) ~ er, data = data, ties = "breslow")
+
+modelo7 =coxph(Surv(dtime/365, death) ~ hormon, data = data, ties = "breslow")
+
+modelo8 =coxph(Surv(dtime/365, death) ~ chemo, data = data, ties = "breslow")
+
+
+
+p_value_m1 = 1-pchisq(2*(modelo1$loglik[2]-modelo1$loglik[1]), 1)
+p_value_m2 = 1-pchisq(2*(modelo2$loglik[2]-modelo2$loglik[1]), 1)
+p_value_m3 = 1-pchisq(2*(modelo3$loglik[2]-modelo3$loglik[1]), 2)
+p_value_m4 = 1-pchisq(2*(modelo4$loglik[2]-modelo4$loglik[1]), 1)
+p_value_m5 = 1-pchisq(2*(modelo5$loglik[2]-modelo5$loglik[1]), 1)
+p_value_m6 = 1-pchisq(2*(modelo6$loglik[2]-modelo6$loglik[1]), 1)
+p_value_m7 = 1-pchisq(2*(modelo7$loglik[2]-modelo7$loglik[1]), 1)
+p_value_m8 = 1-pchisq(2*(modelo8$loglik[2]-modelo8$loglik[1]), 1)
+```
+
+
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Variables}& \textbf{gl} & $\boldsymbol{G}^2$ & \textbf{p-value} \\ \hline
+Edad & 1  &  `r round(2*(modelo1$loglik[2]-modelo1$loglik[1]),3)` & `r round(p_value_m1, 3)`     \\ \hline
+Menopausia  & 1  & `r round(2*(modelo2$loglik[2]-modelo1$loglik[1]),3)`     & `r round(p_value_m2, 3)`       \\ \hline
+Tamaño del tumor & 2  & `r round(2*(modelo3$loglik[2]-modelo1$loglik[1]),3)`     & $<0.001$     \\ \hline
+Grado del tumor  & 1  & `r round(2*(modelo4$loglik[2]-modelo1$loglik[1]),3)`     & `r round(p_value_m4, 3)`      \\ \hline
+Receptores de progesterona & 1  & `r round(2*(modelo5$loglik[2]-modelo1$loglik[1]),3)`     & $<0.001$    \\ \hline
+Receptores de estrógeno    & 1  & `r round(2*(modelo6$loglik[2]-modelo1$loglik[1]),3)`   & `r round(p_value_m6, 3)`      \\ \hline
+Hormonas  & 1  & `r round(2*(modelo7$loglik[2]-modelo1$loglik[1]),3)`    & `r round(p_value_m7, 3)`      \\ \hline
+Quimioterapia & 1  & `r round(2*(modelo8$loglik[2]-modelo1$loglik[1]),3)`    & `r round(p_value_m8, 3)`     \\ \hline
+\end{tabular}\caption{Comparaciones de los modelos}
+\label{table:1}
+\end{table}
+
+Se observa en la tabla 1 que las variables que afectan significativamente a la supervivencia de las mujeres son: 
+-   El tamaño del tumor.
+-   El grado del tumor.
+-   Los receptores de progesterona.
+-   Los receptores de estrógeno.
+-   Si recibio quimoterapia o no.
+
+Por lo que se plantea un modelo con estos parametros.
+
+$$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i )h_0(t)$$ 
+
+$$H_0)\beta_8=0 \quad H_1)\beta_8\ne0$$
+$$H_0)\beta_7=0 \quad H_1)\beta_7\ne0$$
+$$H_0)\beta_6=0 \quad H_1)\beta_6\ne0$$
+$$H_0)\beta_{36}=\beta_{46}=0 \quad H_1)Al \;menos \;uno \ne de\; 0$$
+$$H_0)\beta_{56}=0 \quad H_1)\beta_{56}\ne0$$
+$$H_0)\beta_{35}=\beta_{45}=0 \quad H_1)Al \;menos \;uno \ne de\; 0$$
+
+
+Por lo que nos quedamos con el siguente modelo:
+
+$$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i})h_0(t)$$ 
+
+# Validación del modelo
+
+Para probar que el modelo planteado es correcto, se 
+
+```{r, echo = FALSE, eval = FALSE}
+datos_pgr <- data %>% mutate(pgr_dum = cut(pgr, breaks = c(-1, quantile(data$pgr)[2], quantile(data$pgr)[3],quantile(data$pgr)[4], Inf)))
+table(datos_pgr$pgr_dum)
+
+modelodum <- coxph(Surv(dtime/365, death) ~ size + pgr_dum + grade, data = datos_pgr, ties = "breslow")
+anova(modelo, modelodum)
+```
+
+
+
+
+# Resultados
