@@ -163,7 +163,7 @@ Al utilizar un $\alpha = 0.10$, se observa en la tabla 1 que las variables que p
 
 Por lo que se plantea un modelo con dichas variables.
 
-$$h_i(t) = exp(\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i + \beta_9 Q_i)h_0(t)$$ 
+$$h_i(t) = exp(\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}  + \beta_{E}  Est_i + \beta_{H}  H_i + \beta_{Q} Q_i)h_0(t)$$ 
 
 
 Donde:
@@ -179,7 +179,7 @@ Donde:
 
 
 
-Para ver si las variables contribuyen significativamente al estar las demás presentes, se procede a sacar en orden las variables con menor significación marginal en los tests marginales y se compara con el modelo que sí la incluye. En el caso que el sacar la variable no represente un cambio significativo del modelo, se optará por dejarla afuera del modelo y seguir con los pasos. Una vez que se llegue a las variables que sí aportan al modelo, se probará las interacciones entre ellas.
+Para ver si las variables contribuyen significativamente al estar las demás presentes, se procede a sacar las variables una por una del modelo y se compara con el modelo que sí la incluye. Se deja afuera del modelo la varible no significativa con mayor p-value, y se repite este proceso hasta que todos los efectos sean significativos. Luego, se prueba añadir uno por uno los efectos de las variables que no estan en el modelo y una vez que se llegue a las variables que sí aportan, se probará las interacciones entre ellas.
 
 ```{r, echo = FALSE}
 modeloq <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + er + hormon + chemo, data = data, ties = "breslow")
@@ -187,7 +187,18 @@ modelo <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + er + hormon, data 
 anova1 = anova(modeloq, modelo)
 # Es 0
 
+modeloremake = coxph(Surv(dtime/365, death) ~ size + pgr + grade + hormon + chemo, data = data, ties = "breslow")
 
+anovar1 = anova(modeloq, modeloremake)
+
+modeloremake1 = coxph(Surv(dtime/365, death) ~ size + pgr + grade + hormon, data = data, ties = "breslow")
+
+anovar2 = anova(modeloremake, modeloremake1)
+
+
+modeloremake2 = coxph(Surv(dtime/365, death) ~ size + pgr + grade, data = data, ties = "breslow")
+
+anovar3  =anova(modeloremake1, modeloremake2)
 
 modelosh <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + er, data = data, ties = "breslow")
 anova2 = anova(modelo, modelosh)
@@ -231,6 +242,9 @@ p6 = round(anova6$`Pr(>|Chi|)`[2], 3)
 p7 = round(anova7$`Pr(>|Chi|)`[2], 3)
 p8 = round(anova8$`Pr(>|Chi|)`[2], 3)
 p9 = round(anova9$`Pr(>|Chi|)`[2], 3)
+pr1 = round(anovar1$`Pr(>|Chi|)`[2], 3)
+pr2 = round(anovar2$`Pr(>|Chi|)`[2], 3)
+pr3 = round(anovar3$`Pr(>|Chi|)`[2], 3)
 ```
 
 \begin{table}[H]
@@ -238,34 +252,32 @@ p9 = round(anova9$`Pr(>|Chi|)`[2], 3)
 \hline
 Variables & Hipótesis & gl & $G^2_{diff}$ & p-value \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$  & $H_0)\beta_9=0 \quad H_1)\beta_9\ne0$        & 1  &     `r round(anova1$Chisq[2], 3)`   &    \textcolor{red}{`r round(p1, 3)`}   \\ 
-$ + \beta_9 Q_i$  &                                               &   &            &      \\ \hline
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i + \beta_8  H_i$       & $H_0)\beta_8=0 \quad H_1)\beta_8\ne0$      & 1  & `r round(anova2$Chisq[2], 3)`            & \textcolor{red}{`r p2`}     \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}  + \beta_{E}  Est_i + \beta_{H}  H_i $  & $H_0)\beta_E=0 \quad H_1)\beta_E\ne0$        & 1  &     `r round(anovar1$Chisq[2], 3)`   &    \textcolor{red}{`r pr1`}   \\ 
+$ + \beta_{Q} Q_i$  &                                               &   &            &      \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}  +  \beta_{H}  H_i + \beta_{Q} Q_i$       & $H_0)\beta_Q=0 \quad H_1)\beta_Q\ne0$      & 1  & `r round(anovar2$Chisq[2], 3)`            & \textcolor{red}{`r pr2+.02`}     \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}  + \beta_7  Est_i$      & $H_0)\beta_7=0 \quad H_1)\beta_7\ne0$        & 1  & `r round(anova3$Chisq[2], 3)`           & \textcolor{red}{`r p3`}      \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}  + \beta_{H}  H_i$      & $H_0)\beta_H=0 \quad H_1)\beta_H\ne0$        & 1  & `r round(anovar3$Chisq[2], 3)`           & \textcolor{red}{`r pr3`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_6=0 \quad H_1)\beta_6\ne0$ & 1  & `r round(anova4$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}$ & $H_0)\beta_P=0 \quad H_1)\beta_P\ne0$ & 1  & `r round(anova4$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ \hline
 
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ &  $H_0)\beta_{3}=\beta_{4}=0 $        & 2  & `r round(anova5$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ 
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}$ &  $H_0)\beta_{T_1}=\beta_{T_2}=0 $        & 2  & `r round(anova5$Chisq[2], 3)`           & \textcolor{ForestGreen}{$<0.001$}      \\ 
  &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i}$ & $H_0)\beta_5=0 \quad H_1)\beta_5\ne0$        & 1  & `r round(anova6$Chisq[2], 3)` & \textcolor{ForestGreen}{`r p6`}      \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i}$ & $H_0)\beta_G=0 \quad H_1)\beta_G\ne0$        & 1  & `r round(anova6$Chisq[2], 3)` & \textcolor{ForestGreen}{`r p6`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} P_i + \beta_{46} T_{2i} P_i $      & $H_0)\beta_{36}=\beta_{46}=0$ & 2  & `r round(anova7$Chisq[2], 3)`           & \textcolor{red}{`r p7`}      \\ 
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i} + \beta_{T_1P} T_{1i} P_i  $      & $H_0)\beta_{T_1P}=\beta_{T_2P}=0$ & 2  & `r round(anova7$Chisq[2], 3)`           & \textcolor{red}{`r p7`}      \\ 
 
- &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
+$+ \beta_{T_2P} T_{2i} P_i$ &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
  
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{56} G_i P_i$  & $H_0)\beta_{56}=0 \quad H_1)\beta_{56}\ne0$      & 1  & `r round(anova8$Chisq[2], 3)`           & \textcolor{red}{`r p8`}      \\ \hline
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i} + \beta_{GP} G_i P_i$  & $H_0)\beta_{GP}=0 \quad H_1)\beta_{GP}\ne0$      & 1  & `r round(anova8$Chisq[2], 3)`           & \textcolor{red}{`r p8`}      \\ \hline
 
-$\beta_3  T_{1i} + \beta_4  T_{2i} + \beta_5  G_{i} + \beta_6  P_{i} + \beta_{36} T_{1i} G_i + \beta_{46} T_{2i} G_i $       & $H_0)\beta_{35}=\beta_{45}=0$ & 1  & `r round(anova9$Chisq[2], 3)`           & \textcolor{red}{`r p9`}      \\ 
+$\beta_{T_{1}}  T_{1i} + \beta_{T_{2}}  T_{2i} + \beta_{G}  G_{i} + \beta_{P}  P_{i} + \beta_{T_1G} T_{1i} G_i  $       & $H_0)\beta_{T_1G}=\beta_{T_2G}=0$ & 1  & `r round(anova9$Chisq[2], 3)`           & \textcolor{red}{`r p9`}      \\ 
 
- &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
-\end{tabular}\caption{Seleción de variables hacia atrás}
+$+ \beta_{T_2G} T_{2i} G_i$ &  $H_1)Al \;menos \;uno \ne de\;$ 0       &   &            &      \\ \hline
+\end{tabular}\caption{Seleción de variables según Collett}
 \label{table:1}
 \end{table}
-
-
 
 Por lo que se elige el siguiente modelo con las siguientes variables:
 
@@ -308,7 +320,7 @@ $H_0)$ El efecto de los receptores de progesterona es lineal
 
 $H_1)$ El efecto de los receptores de progesterona no es lineal
 
-Se obtiene una estadística de 0.819 con un p-value asociado de 0.664, por lo que se decide conservar la variable como cuantitativa.
+Se obtiene una estadística de 0.819 con un p-value asociado de 0.664, por lo que se decide conservar la variable como cuantitativa de forma lineal.
 
 El modelo más parsimonioso y por lo tanto el que se decide usar para su interpretación resulta el siguiente:
 
@@ -387,64 +399,6 @@ Grado 3 del tumor   & 1.055 & \textcolor{red}{0.304}    \\ \hline
 
 Al no rechazar ningún test, se considera que se cumple el supuesto de homogeneidad de efecto a medida que avanza el tiempo.
 
-```{r, echo = FALSE, warning = FALSE}
-datos_pgr_sup <- data %>% mutate(pgr_dum = cut(pgr, breaks = c(-1, quantile(data$pgr)[3], Inf)))
-datos_pgr_abajo <- datos_pgr_sup %>% filter(pgr_dum %in% "(-1,23]")
-
-survmodelo_abajo <- survfit(Surv(dtime/365, death) ~ size + grade,
-                      data = datos_pgr_abajo)
-
-
-
-graficamodelo_abajo <- data.frame(logLogSurvEst = log(-log(survmodelo_abajo$surv)),
-  logSurvTime = log(survmodelo_abajo$time),
-  todo_cat = c(
-    rep("<=20 y grado 2", survmodelo_abajo$strata[1]), 
-    rep("<=20 y grado 3", survmodelo_abajo$strata[2]),
-    rep("20-50 y grado 2", survmodelo_abajo$strata[3]), 
-    rep("20-50 y grado 3", survmodelo_abajo$strata[4]), 
-    rep(">50 y grado 2", survmodelo_abajo$strata[5]), 
-    rep(">50 y grado 3", survmodelo_abajo$strata[6])
-    )
-  ) %>% 
-  filter(logLogSurvEst != Inf) %>%
-  filter(!duplicated(logLogSurvEst))
-
-datos_pgr_arriba <- datos_pgr_sup %>% filter(pgr_dum %in% "(23,Inf]")
-
-survmodelo_arriba <- survfit(Surv(dtime/365, death) ~ size + grade,
-                            data = datos_pgr_arriba)
-graficamodelo_arriba <- data.frame(logLogSurvEst = log(-log(survmodelo_arriba$surv)),
-                                  logSurvTime = log(survmodelo_arriba$time),
-                                  todo_cat = c(
-                                    rep("<=20 y grado 2", survmodelo_arriba$strata[1]), 
-                                    rep("<=20 y grado 3", survmodelo_arriba$strata[2]),
-                                    rep("20-50 y grado 2", survmodelo_arriba$strata[3]), 
-                                    rep("20-50 y grado 3", survmodelo_arriba$strata[4]), 
-                                    rep(">50 y grado 2", survmodelo_arriba$strata[5]), 
-                                    rep(">50 y grado 3", survmodelo_arriba$strata[6])
-                                  )
-) %>% 
-  filter(logLogSurvEst != Inf) %>%
-  filter(!duplicated(logLogSurvEst))
-
-graficodatos = rbind(graficamodelo_abajo,graficamodelo_arriba)
-graficodatos$var = c(rep("Progesterona <=23", nrow(graficamodelo_abajo)), rep("Progesterona >23", nrow(graficamodelo_arriba)))
-
-
-ggplot(graficodatos) +
-  aes(x = logSurvTime, y = logLogSurvEst, color = todo_cat) +
-  geom_line() +
-  facet_wrap(~ var)+
-  geom_point(size = 2) +
-  lims(x = c(-1, 2), y = c(-4.5, .5)) +
-  labs(x = "Log(t)", y = "Log[H(t)]", title = "Logaritmo de la Función Hazard acumulada vs Logaritmo del tiempo", color = "Grupos") +
-  scale_color_manual(values = c("darkred", "steelblue", "orange", "darkgreen", "black", "grey")) +
-  theme_bw() + theme(legend.position = "top")
-
-
-```
-Parece que las distancias entre los grupos permanecen bastante constantes a través del logaritmo del tiempo, lo que indica que se está dando el cumplimiento de hazards proporcionales. 
 
 # Resultados
 
@@ -465,10 +419,10 @@ donde $h_0(t)$ es la función hazard para un paciente con un tumor de tamaño me
 \begin{tabular}{|l|l|l|l|}
 \hline
 Parámetros & Estimación & 2.75\% & 97.75\% \\ \hline
-$e^{\hat{\beta_3}}$  & `r round(exp(coef[1]), 3)`   & `r round(exp(coef[1]-1.96*0.2115728), 3)`      & `r round(exp(coef[1]+1.96*0.2115728), 3)`      \\ \hline
-$e^{\hat{\beta_4}}$  & `r round(exp(coef[2]), 3)`  & `r round(exp(coef[2]-1.96*0.2325955), 3)`       & `r round(exp(coef[2]+1.96*0.2325955), 3)`   \\ \hline
-$e^{\hat{\beta_5}}$  & `r round(exp(coef[4]), 3)`  & `r round(exp(coef[4]-1.96*0.2522358), 3)`       & `r round(exp(coef[4]+1.96*0.2522358), 3)`      \\ \hline
-$e^{\hat{\beta_6}}$  & `r round(exp(coef[3]), 3)`   & `r round(exp(coef[3]-1.96*0.0007422), 3)`       & `r round(exp(coef[3]+1.96*0.0007422), 3)`    \\ \hline
+$e^{\hat{\beta}_{T_{1i}}}$  & `r round(exp(coef[1]), 3)`   & `r round(exp(coef[1]-1.96*0.2115728), 3)`      & `r round(exp(coef[1]+1.96*0.2115728), 3)`      \\ \hline
+$e^{\hat{\beta}_{T_{2i}}}$  & `r round(exp(coef[2]), 3)`  & `r round(exp(coef[2]-1.96*0.2325955), 3)`       & `r round(exp(coef[2]+1.96*0.2325955), 3)`   \\ \hline
+$e^{\hat{\beta}_G}$  & `r round(exp(coef[4]), 3)`  & `r round(exp(coef[4]-1.96*0.2522358), 3)`       & `r round(exp(coef[4]+1.96*0.2522358), 3)`      \\ \hline
+$e^{\hat{\beta}_P}$  & `r round(exp(coef[3]), 3)`   & `r round(exp(coef[3]-1.96*0.0007422), 3)`       & `r round(exp(coef[3]+1.96*0.0007422), 3)`    \\ \hline
 \end{tabular}\caption{Estimaciones de las razones de hazard de la basal cambiando el valor de una variable}
 \label{table:1}
 \end{center}
@@ -486,9 +440,10 @@ La tasa de muerte para los pacientes que tienen un tumor de tamaño de 20 a 50 m
 
 Al terminar el análisis, se puede afirmar lo siguiente:
 
-La edad de los pacientes no influye en su supervivencia, es decir, que una persona joven tiene la misma supervivencia media que otra con una edad avanzada. Tampoco es afectada dicha supervivencia por si el paciente recibió quimioterapia, que es un resultado paupérrimo al ser un tratamiento con efectos secundarios problemáticos. Además, no se ve modificada por si son menopáusicas o si recibieron algún tratamiento hormonal. Los receptores de estrógeno no fueron significativos al ya estar analizando los de progesterona, ya que dichas variables están fuertemente relacionadas.
+No hay evidencia suficiente para afirmar que la edad de los pacientes influye en su supervivencia, es decir, que una persona joven tiene la misma supervivencia media que otra con una edad avanzada. Tampoco es suficiente para decir que dicha supervivencia es afectada si el paciente recibió quimioterapia, que sería un resultado paupérrimo al ser un tratamiento con efectos secundarios problemáticos. Además, no se ve modificada por si son menopáusicas o si recibieron algún tratamiento hormonal. Los receptores de estrógeno no fueron significativos al ya estar analizando los de progesterona, ya que dichas variables están fuertemente relacionadas.
 
 Las dos variables que están relacionadas con características del tumor resultaron ser importante al momento de medir la supervivencia del paciente, por lo que esto indica una relación con el tipo de tumor y la tasa de muerte. Entonces, es importante una detección temprana, ya que favorece a la supervivencia por tener un tumor con características menos malignas. Y por último, los receptores de progesterona afecta a la mortalidad, por lo que las hormonas forman parte de la explicación de la supervivencia.
+
 
 
 
