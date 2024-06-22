@@ -209,6 +209,23 @@ modeloser <- coxph(Surv(dtime/365, death) ~ size + pgr + grade, data = data, tie
 anova3 = anova(modelo, modeloser)
 # Es 0
 
+
+modeloser1 <- coxph(Surv(dtime/365, death) ~ size + pgr + grade+ + er, data = data, ties = "breslow")
+modeloser2 <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + hormon, data = data, ties = "breslow")
+modeloser3 <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + chemo, data = data, ties = "breslow")
+modeloser4 <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + age, data = data, ties = "breslow")
+modeloser5 <- coxph(Surv(dtime/365, death) ~ size + pgr + grade + meno, data = data, ties = "breslow")
+
+anovacomp1 = anova(modeloser1, modeloser)
+anovacomp2 = anova(modeloser3, modeloser)
+anovacomp3 = anova(modeloser2, modeloser)
+anovacomp4 = anova(modeloser5, modeloser)
+anovacomp5 = anova(modeloser4, modeloser)
+ 
+# Todos no significativos
+
+
+
 modelospgr <- coxph(Surv(dtime/365, death) ~ size + grade, data = data, ties = "breslow")
 anova4 =anova(modeloser, modelospgr)
 #distinto
@@ -232,6 +249,10 @@ anova8 = anova(modelo, modeloint)
 
 modeloint <- coxph(Surv(dtime/365, death) ~ size*grade + pgr, data = data, ties = "breslow")
 anova9 = anova(modelo, modeloint)
+
+
+
+
 
 p1 = round(anova1$`Pr(>|Chi|)`[2], 3)
 p2 = round(anova2$`Pr(>|Chi|)`[2], 3)
